@@ -50,9 +50,6 @@ max-line-length = 120
 logging-format-style = "old"
 logging-modules = ["logging"]
 
-[tool.pylint.variables]
-allow-global-unused-variables = false
-
 [tool.mypy]
 ignore_missing_imports = true
 follow_imports = "skip"
@@ -64,6 +61,9 @@ allow_untyped_globals = true
 show_error_context = true
 show_column_numbers = true
 show_error_codes = true
+
+[tool.isort]
+profile = "black"
 
 ############################################# Formatter ############################################
 
