@@ -47,7 +47,7 @@ indent-string = "    "
 max-line-length = 120
 
 [tool.pylint.logging]
-logging-format-style = "new"
+logging-format-style = "old"
 logging-modules = ["logging"]
 
 [tool.pylint.variables]
