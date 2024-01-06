@@ -1,0 +1,22 @@
+############################################## Linter ##############################################
+
+[tool.pylint.main]
+persistent = true
+suggestion-mode = true
+load-plugins = ["pylint.extensions.docstyle", "pylint_pytest"]
+
+[tool.pylint.design]
+max-branches = 10
+
+[tool.pylint.format]
+ignore-long-lines = "^\\s*(# )?<?https?://\\S+>?$"
+indent-string = "    "
+max-line-length = 120
+
+[tool.pylint.logging]
+logging-format-style = "new"
+logging-modules = ["logging"]
+
+[tool.pylint.variables]
+allow-global-unused-variables = false
+
