@@ -10,8 +10,8 @@ from qmllint_codequality import VERSION_MESSAGE, __project__, convert_file
 def _get_args() -> argparse.Namespace:
     """Parse the command line option passed to the application.
 
-    Returns:
-        argparse.Namespace: The parsed options
+    :return: The parsed options
+    :rtype: argparse.Namespace
     """
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawTextHelpFormatter, prog=__project__, description=__doc__
@@ -60,8 +60,8 @@ def _get_args() -> argparse.Namespace:
 def _configure_log(login_level: str) -> None:
     """Configure the logging library the to given level.
 
-    Args:
-        login_level (str): The login level.
+    :param login_level: The login level.
+    :type login_level: str
     """
     logging.basicConfig(
         level=logging.getLevelName(login_level),
@@ -75,8 +75,8 @@ def _configure_log(login_level: str) -> None:
 def main() -> int:
     """Convert a qmllint JSON output to Code Climate JSON file, at the command line.
 
-    Returns:
-        int: 0 if successful, 0 otherwise.
+    :return:  0 if successful, 0 otherwise.
+    :rtype: int
     """
     if sys.version_info < (3, 10, 0):
         sys.stderr.write("You need python 3.10 or later to run this script\n")
