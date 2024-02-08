@@ -36,7 +36,14 @@ find = {}
 [tool.pylint.main]
 persistent = true
 suggestion-mode = true
-load-plugins = ["pylint.extensions.docstyle", "pylint_pytest"]
+load-plugins = [
+    "pylint.extensions.code_style",
+    "pylint.extensions.docparams",
+    "pylint.extensions.docstyle",
+    "pylint.extensions.magic_value",
+    "pylint.extensions.mccabe",
+    "pylint_pytest",
+]
 
 [tool.pylint.design]
 max-branches = 10
@@ -49,6 +56,17 @@ max-line-length = 120
 [tool.pylint.logging]
 logging-format-style = "old"
 logging-modules = ["logging"]
+
+[tool.pylint.parameter_documentation]
+accept-no-param-doc = false
+accept-no-raise-doc = false
+accept-no-return-doc = false
+accept-no-yields-doc = false
+
+default-docstring-type = "sphinx"
+
+[tool.pylint.magic-value]
+valid-magic-values = [0, -1, 1, "", "__main__"]
 
 [tool.mypy]
 ignore_missing_imports = true
