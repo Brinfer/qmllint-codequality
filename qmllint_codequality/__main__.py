@@ -87,8 +87,7 @@ def main() -> int:
     _configure_log(args.verbosity)
 
     # Convert the clang-tidy output to JSON here.
-    ret = convert_file(args.input_file, args.output_file)
-    if ret < 0:
+    if (ret := convert_file(args.input_file, args.output_file)) < 0:
         logging.error("Conversion failed")
         return 1
 

@@ -82,7 +82,6 @@ analysis merge:
     - |+
       for json in ${JSON_REPORT_DIR}/*.json
       do
-        echo ">>> ${json}"
         jq -c '.[]' ${json} >> ${JSON_REPORT_TMP}
       done
     - jq -s '.' ${JSON_REPORT_TMP} > ${JSON_REPORT}
