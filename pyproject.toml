@@ -1,7 +1,7 @@
 ############################################# Project ##############################################
 
 [project]
-name = "clangtidy-codequality"
+name = "qmllint-codequality"
 authors = [{ name = "Brinfer", email = "brinfer@proton.me" }]
 description = "Convert qmllint output to Code Quality JSON"
 requires-python = ">=3.10"
@@ -16,7 +16,7 @@ classifiers = [
 dynamic = ["version", "readme"]
 
 [project.scripts]
-clangtidy-codequality = "qmllint_codequality.__main__:main"
+qmllint-codequality = "qmllint_codequality.__main__:main"
 
 ########################################## Package builder #########################################
 
