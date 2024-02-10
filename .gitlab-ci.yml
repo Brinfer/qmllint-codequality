@@ -1,0 +1,62 @@
+default:
+  image: python:3.10
+  cache:
+    paths:
+      - .cache/pip
+  before_script:
+    - pip install -r requirements.txt
+
+variables:
+  PACKAGE_NAME: qmllint_codequality
+  CONFIG_FILE: ${CI_PROJECT_DIR}/pyproject.toml
+
+stages:
+  - Static analysis
+  - Formatting
+  - Build
+
+.lint:
+  allow_failure: true
+  rules:
+    # If changes of the sources files are pushed to the current or default branch, or is a manual request
+    - if: $CI_PIPELINE_SOURCE  == "merge_request_event" || $CI_PIPELINE_SOURCE == "web"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+
+pylint:
+  extends: .lint
+  stage: Static analysis
+  variables:
+    MSG_TEMPLATE: "{path}:{line}:{column}: {category}: {msg} ({msg_id}:{symbol})"
+  script:
+    - pylint --rcfile=${CONFIG_FILE} --msg-template="${MSG_TEMPLATE}" --score=y ${PACKAGE_NAME}
+
+mypy:
+  extends: .lint
+  stage: Static analysis
+  script:
+    - mypy --config-file ${CONFIG_FILE} --package ${PACKAGE_NAME}
+
+black:
+  extends: .lint
+  stage: Formatting
+  script:
+    - black --verbose --config ${CONFIG_FILE} --check ${PACKAGE_NAME}
+
+isort:
+  extends: .lint
+  stage: Formatting
+  script:
+    - isort --settings-path ${CONFIG_FILE} --verbose --check ${PACKAGE_NAME}
+
+build:
+  stage: Build
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  script:
+    - python -m build
+  artifacts:
+    expire_in: "7 days"
+    paths:
+      - dist/
+      - ${PACKAGE_NAME}.egg-info
