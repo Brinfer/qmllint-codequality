@@ -67,16 +67,25 @@ analysis merge:
   extends: .lint
   stage: Static analysis
   allow_failure: false
+  image: alpine:latest
   needs:
     - pylint
     - mypy
   variables:
     JSON_REPORT: ${JSON_REPORT_DIR}/gl-codequality-report.json
+    JSON_REPORT_TMP: gl-codequality-report-tmp.json
   before_script:
-    - apt update
-    - apt install -y jq
+    - apk add jq
+    - touch ${JSON_REPORT}
+    - touch ${JSON_REPORT_TMP}
   script:
-    - jq -s . ${JSON_REPORT_DIR}/*.json > ${JSON_REPORT}
+    - |+
+      for json in ${JSON_REPORT_DIR}/*.json
+      do
+        echo ">>> ${json}"
+        jq -c '.[]' ${json} >> ${JSON_REPORT_TMP}
+      done
+    - jq -s '.' ${JSON_REPORT_TMP} > ${JSON_REPORT}
   artifacts:
     when: always
     reports:
