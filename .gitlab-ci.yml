@@ -2,8 +2,8 @@ default:
   image: python:3.10
   cache:
     paths:
-      - .cache/pip
-  before_script:
+      - ${CI_PROJECT_DIR}/.cache/pip
+  before_script: &default_before_script
     - pip install -r requirements.txt
 
 variables:
@@ -17,6 +17,11 @@ stages:
 
 .lint:
   allow_failure: true
+  variables:
+    JSON_REPORT_DIR: ${CI_PROJECT_DIR}/reports
+  before_script: &lint_before_script
+    - *default_before_script
+    - mkdir -p ${JSON_REPORT_DIR}
   rules:
     # If changes of the sources files are pushed to the current or default branch, or is a manual request
     - if: $CI_PIPELINE_SOURCE  == "merge_request_event" || $CI_PIPELINE_SOURCE == "web"
@@ -27,15 +32,56 @@ pylint:
   extends: .lint
   stage: Static analysis
   variables:
-    MSG_TEMPLATE: "{path}:{line}:{column}: {category}: {msg} ({msg_id}:{symbol})"
+    PYLINT_JSON_REPORT: ${JSON_REPORT_DIR}/gl-codequality-pylint-report.json
+  before_script:
+    - *lint_before_script
+    - pip install pylint-gitlab
   script:
-    - pylint --rcfile=${CONFIG_FILE} --msg-template="${MSG_TEMPLATE}" --score=y ${PACKAGE_NAME}
+    - pylint --rcfile=${CONFIG_FILE} --load-plugins=pylint_gitlab --output-format=gitlab-codeclimate --score=y ${PACKAGE_NAME} > ${PYLINT_JSON_REPORT}
+  artifacts:
+    when: always
+    paths:
+      - ${PYLINT_JSON_REPORT}
+    expire_in: 1 hour
 
 mypy:
   extends: .lint
   stage: Static analysis
+  variables:
+    MYPY_TMP_FILE: mypy-output-tmp.txt
+    MYPY_JSON_REPORT: ${JSON_REPORT_DIR}/gl-codequality-mypy-report.json
+  before_script:
+    - *lint_before_script
+    - pip install mypy-gitlab-code-quality
   script:
-    - mypy --config-file ${CONFIG_FILE} --package ${PACKAGE_NAME}
+    - mypy --config-file ${CONFIG_FILE} --package ${PACKAGE_NAME} > ${MYPY_TMP_FILE}
+  after_script:
+    - mypy-gitlab-code-quality < ${MYPY_TMP_FILE} > ${MYPY_JSON_REPORT}
+  artifacts:
+    when: always
+    paths:
+      - ${MYPY_JSON_REPORT}
+    expire_in: 1 hour
+
+analysis merge:
+  extends: .lint
+  stage: Static analysis
+  allow_failure: false
+  needs:
+    - pylint
+    - mypy
+  variables:
+    JSON_REPORT: ${JSON_REPORT_DIR}/gl-codequality-report.json
+  before_script:
+    - apt update
+    - apt install -y jq
+  script:
+    - jq -s . ${JSON_REPORT_DIR}/*.json > ${JSON_REPORT}
+  artifacts:
+    when: always
+    reports:
+      codequality:
+        - ${JSON_REPORT}
 
 black:
   extends: .lint
