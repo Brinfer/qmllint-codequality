@@ -25,8 +25,6 @@ import hashlib
 import json
 import logging
 import os
-import string
-from typing import Optional
 
 from qmllint_codequality import codequality, qmllint
 
@@ -43,6 +41,8 @@ logger = logging.getLogger(__name__)
 
 
 class Diagnostic:
+    """Diagnostic class converting qmllint diagnostic to CodeQuality report."""
+
     QMLLINT_LEVEL_TO_CODE_QUALITY_SEVERITY = {
         qmllint.WarningType.INFO: codequality.Severity.INFO,
         qmllint.WarningType.WARNING: codequality.Severity.MAJOR,
@@ -50,7 +50,7 @@ class Diagnostic:
     }
 
     @staticmethod
-    def name_to_category(name: str) -> codequality.Category:
+    def rule_to_category(name: qmllint.Rules) -> codequality.Category:
         """Determine the Code Quality category of the diagnostic from its name.
 
         :param name: The name of the diagnostic.
@@ -60,65 +60,42 @@ class Diagnostic:
         """
         category = codequality.Category.BUG_RISK
 
-        if name in ["MissingType", "UnusedImport", "UnqualifiedAccess"]:
+        if name in [qmllint.Rules.MISSING_TYPE, qmllint.Rules.UNUSED_IMPORTS, qmllint.Rules.UNQUALIFIED_ACCESS]:
             category = codequality.Category.CLARITY
-        elif name in ["MultilineStrings"]:
+        elif name in [qmllint.Rules.MULTILINE_STRINGS]:
             category = codequality.Category.STYLE
-        elif name in ["InheritanceCycle"]:
+        elif name in [qmllint.Rules.INHERITANCE_CYCLE]:
             category = codequality.Category.PERFORMANCE
-        elif name in ["Deprecated", "NonListProperty"]:
+        elif name in [qmllint.Rules.DEPRECATED, qmllint.Rules.NON_LIST_PROPERTY]:
             category = codequality.Category.COMPATIBILITY
 
         return category
 
-    @staticmethod
-    def message_to_name(msg: str) -> str:
-        """Determine the name of the diagnostic from the diagnostic message.
-
-        :param msg: The diagnostic's message.
-        :type msg: str
-        :return: The name of the diagnostic.
-        :rtype: str
-        """
-        normalized_message = msg.lower()
-
-        # Map warning messages to categories
-        if "unqualified access" in normalized_message:
-            return "Unqualified accesses of properties"
-
-        if "usage of signal handlers" in normalized_message:
-            return "Signal handler without matching signal"
-
-        if "usage of with statements" in normalized_message:
-            return "Usage of with statements in QML"
-
-        if "issues related to compiling qml code" in normalized_message:
-            return "Issues related to compiling QML code"
-
-        if "unused imports" in normalized_message:
-            return "Unused imports"
-
-        if "deprecated" in normalized_message:
-            return "Deprecated components and properties"
-
-        return "Other"  # Default category for unrecognized warnings
-
-        for warning, splitted in _QMLLINT_WARNING_SPLITTED.items():
-            if splitted <= msg_words:
-                current_warning = warning
-                break
-
-        return f"qmllint[{current_warning}]"
-
     def __init__(
         self,
         filename: str,
-        level: str,
+        level: qmllint.WarningType,
         message: str,
-        line: Optional[int] = None,
-        column: Optional[int] = None,
-        length: Optional[int] = None,
+        line: int | None = None,
+        column: int | None = None,
+        length: int | None = None,
     ) -> None:
+        """Initialize a new Diagnostic object.
+
+        :param filename: The filename containing the warning.
+        :type filename: str
+        :param level: The qmllint warning level.
+        :type level: str
+        :param message: The qmllint message.
+        :type message: str
+        :param line: The line number at the start of the offending code sequence., defaults to None
+        :type line: int | None, optional
+        :param column: The column number at the start of the offending code sequence., defaults to None
+        :type column: int | None, optional
+        :param length: The length of the offending code sequence, defaults to None
+        :type length: int | None, optional
+        """
+
         self.__filename = filename
         """File name of the file containing the warning."""
 
@@ -126,7 +103,7 @@ class Diagnostic:
         """Severity level of the warning."""
 
         try:
-            self.__level = codequality.Severity[level]
+            self.__level = Diagnostic.QMLLINT_LEVEL_TO_CODE_QUALITY_SEVERITY[level]
         except KeyError:
             logger.warning("Level '%s' not recognized. Use default value.", level)
             self.__level = codequality.Severity.BLOCKER
@@ -144,11 +121,11 @@ class Diagnostic:
         """Number of column where the warning."""
 
         # Compose the name from the current information
-        self.__name = Diagnostic.message_to_name(self.__message)
+        self.__name = qmllint.Rules.from_message(self.__message)
         """Diagnostic name used for the check name field of the Code Quality JSON."""
 
         # Compute the category from the name
-        self.__category = Diagnostic.name_to_category(self.__name)
+        self.__category = Diagnostic.rule_to_category(self.__name)
         """Code Quality category of the diagnostic."""
 
         # Compute the fingerprint of the diagnostic
@@ -163,7 +140,7 @@ class Diagnostic:
 
         .. seealso:: Diagnostic.__str__
         """
-        return f"{str(self)}"
+        return str(self)
 
     def __str__(self) -> str:
         """Convert a diagnostic to a string.
@@ -173,7 +150,20 @@ class Diagnostic:
 
         .. seealso:: Diagnostic.__repr__
         """
-        return f"{self.__level} at {self.__filename}{f':{self.__line}' if self.__line else ''}{f':{self.__column}' if self.__column else ''}{f':{self.__length}' if self.__length else ''}: {self.__message}"
+        string = f"{self.__level} at {self.__filename}"
+
+        if self.__line:
+            string += f":{self.__line}"
+
+        if self.__column:
+            string += f":{self.__column}"
+
+        if self.__length:
+            string += f":{self.__length}"
+
+        string += f": {self.__message}"
+
+        return string
 
     def to_code_quality(self) -> codequality.Report:
         """Convert the current diagnostic to the Code Quality format.
@@ -195,10 +185,10 @@ class Diagnostic:
             position: codequality.LocationPositionBased = {}
 
             if self.__line:
-                position.setdefault("begin", codequality.Position())["lines"] = self.__line
+                position.setdefault("begin", {})["lines"] = self.__line
 
             if self.__column:
-                position.setdefault("begin", codequality.Position())["column"] = self.__column
+                position.setdefault("begin", {})["column"] = self.__column
 
             code_quality["location"]["position"] = position
 

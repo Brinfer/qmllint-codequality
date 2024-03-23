@@ -40,7 +40,7 @@ class Severity(str, Enum):
     BLOCKER = "blocker"
 
 
-class Position(TypedDict, total=True):
+class Position(TypedDict, total=False):
     """A CodeQuality position.
 
     The typical format is as follow:
