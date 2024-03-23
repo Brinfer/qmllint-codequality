@@ -26,8 +26,9 @@ import json
 import logging
 import os
 import string
-from enum import Enum, unique
-from typing import Any, Optional, Union
+from typing import Optional
+
+from qmllint_codequality import codequality, qmllint
 
 __version__ = "1.0.0"
 __project__ = "qmllint-codequality"
@@ -38,215 +39,18 @@ VERSION_MESSAGE = f"""
 """
 """The message displayed when using the `qmllint-codequality --version` command."""
 
-_QMLLINT_WARNING_SPLITTED: dict[str, set] = {
-    "ImportFailure": {"import", "failure"},
-    "ReadOnlyProperty": {"read", "only", "property"},
-    "BadSignalHandlerParameters": {"bad", "signal", "handler", "parameters"},
-    "UnusedImports": {"unused", "imports"},
-    "DuplicatedName": {"duplicated", "name"},
-    "PrefixedImportType": {"prefixed", "import", "type"},
-    "AccessSingletonViaObject": {"access", "singleton", "via", "object"},
-    "Deprecated": {"deprecated"},
-    "ControlsSanity": {"controls", "sanity"},
-    "UnresolvedType": {"unresolved", "type"},
-    "LintPluginWarnings": {"lint", "plugin", "warnings"},
-    "MultilineStrings": {"multiline", "strings"},
-    "RestrictedType": {"restricted", "type"},
-    "PropertyAliasCycles": {"property", "alias", "cycles"},
-    "VarUsedBeforeDeclaration": {"var", "used", "before", "declaration"},
-    "AttachedPropertyReuse": {"attached", "property", "reuse"},
-    "RequiredProperty": {"required", "property"},
-    "WithStatement": {"with", "statement"},
-    "InheritanceCycle": {"inheritance", "cycle"},
-    "UnqualifiedAccess": {"unqualified", "access"},
-    "UncreatableType": {"uncreatable", "type"},
-    "MissingProperty": {"property", "not", "found"},
-    "InvalidLintDirective": {"invalid", "lint", "directive"},
-    "CompilerWarnings": {"could", "not", "compile"},
-    "UseProperFunction": {"use", "proper", "function"},
-    "NonListProperty": {"non", "list", "property"},
-    "IncompatibleType": {"incompatible", "type"},
-    "TopLevelComponent": {"top", "level", "component"},
-    "MissingType": {"missing", "type"},
-    "DuplicatePropertyBinding": {"duplicate", "property", "binding"}
-}
-
-
-@unique
-class CodeQualityElement(str, Enum):
-    """Elements composing the Code Quality JSON report.
-
-    The typical format of an element is as follows:
-
-    ```json
-    {
-        "type": "issus",
-        "severity": "<severity of the issus>",
-        "check_name": "<issus name>",
-        "description": "<description of the issus>",
-        "categories": [
-            "<category of the issus>"
-        ],
-        "fingerprint": "<unique hash>",
-        "location": {
-            "path": "<path to the file>",
-            "position": {
-                "begin": {
-                    "line": 1,
-                    "column": 1
-                },
-                "end": {
-                    "line": 999,
-                    "column": 999
-                }
-            }
-        }
-    },
-    ```
-
-    .. note::
-        * Not all the possible elements contained in the file are represented. Only those used in this program are
-
-    .. seealso::
-        - CodeQualityCategory for the different value of the fields categories.
-        - https://github.com/codeclimate/platform/blob/master/spec/analyzers/SPEC.md#data-types
-    """
-
-    TYPE = "type"
-    """Must always be 'issue'
-
-    Required.
-    """
-
-    CHECK_NAME = "check_name"
-    """A unique name representing the static analysis check that emitted this issue.
-
-    Required.
-    """
-
-    DESCRIPTION = "description"
-    """A string explaining the issue that was detected.
-
-    Descriptions must be a single line of text (no newlines), with no HTML formatting contained within.
-    Ideally, descriptions should be fewer than 70 characters long, but this is not a requirement.
-
-    Required.
-    """
-
-    CATEGORIES = "categories"
-    """At least one category indicating the nature of the issue being reported.
-
-    Required.
-
-    See:
-        CodeQualityCategories
-    """
-
-    LOCATION = "location"
-    """A Location object representing the place in the source code where the issue was discovered.
-
-    Locations refer to ranges of a source code file. A Location contains a path and a source range
-    (expressed as lines or positions).
-
-    Required.
-    """
-
-    SEVERITY = "severity"
-    """A Severity string (info, minor, major, critical, or blocker) describing the potential impact
-    of the issue found.
-
-    Optional but required by GitLab.
-    """
-
-    FINGERPRINT = "fingerprint"
-    """A unique, deterministic identifier for the specific issue being reported to allow a user to exclude
-    it from future analyses.
-
-    Optional but required by GitLab.
-    """
-
-    PATH = "path"
-    """All Locations require a path property, which is the file path.
-
-    Required.
-    """
-
-    POSITION = "position"
-    """Positions refer to specific characters within a source file.
-
-    The position is expressed as a line and column coordinates.
-
-    Required.
-    """
-
-    LINE = "line"
-    """The line number of a position.
-
-    Line and column numbers are 1-based. Therefore, a Position of `{ "line": 2, "column": 3 }` represents the
-    third character on the second line of the file.
-
-    Required.
-    """
-
-    COLUMN = "column"
-    """The column number of a position.
-
-    Line and column numbers are 1-based. Therefore, a Position of `{ "line": 2, "column": 3 }` represents the
-    third character on the second line of the file.
-
-    Required.
-    """
-
-    BEGIN = "begin"
-    """Position at which the issue begins.
-
-    Required.
-    """
-
-    END = "end"
-    """Position at which the issue end.
-
-    This field is used to represent a range on which the issue takes place.
-
-    Optional.
-    """
-
-
-@unique
-class CodeQualityCategory(str, Enum):
-    """Value that can be set in the 'categories' field of the Code Quality JSON.
-
-    .. seealso::
-        * https://github.com/codeclimate/platform/blob/master/spec/analyzers/SPEC.md#categories
-    """
-
-    BUG_RISK = "Bug Risk"
-    CLARITY = "Clarity"
-    COMPATIBILITY = "Compatibility"
-    COMPLEXITY = "Complexity"
-    DUPLICATION = "Duplication"
-    PERFORMANCE = "Performance"
-    SECURITY = "Security"
-    STYLE = "Style"
-
-
-@unique
-class QmlLintElement(str, Enum):
-    FILES = "files"
-    FILENAME = "filename"
-    WARNINGS = "warnings"
-    COLUMN = "column"
-    LINE = "line"
-    LENGTH = "length"
-    TYPE = "type"
-    MESSAGE = "message"
+logger = logging.getLogger(__name__)
 
 
 class Diagnostic:
-    QMLLINT_LEVEL_TO_CODE_QUALITY_SEVERITY = {"info": "info", "warning": "major", "disable": ""}
+    QMLLINT_LEVEL_TO_CODE_QUALITY_SEVERITY = {
+        qmllint.WarningType.INFO: codequality.Severity.INFO,
+        qmllint.WarningType.WARNING: codequality.Severity.MAJOR,
+        qmllint.WarningType.DISABLE: codequality.Severity.BLOCKER,
+    }
 
     @staticmethod
-    def name_to_category(name: str) -> CodeQualityCategory:
+    def name_to_category(name: str) -> codequality.Category:
         """Determine the Code Quality category of the diagnostic from its name.
 
         :param name: The name of the diagnostic.
@@ -254,23 +58,50 @@ class Diagnostic:
         :return: The category of the diagnostic.
         :rtype: CodeQualityCategory
         """
-        category = CodeQualityCategory.BUG_RISK
+        category = codequality.Category.BUG_RISK
 
         if name in ["MissingType", "UnusedImport", "UnqualifiedAccess"]:
-            category = CodeQualityCategory.CLARITY
+            category = codequality.Category.CLARITY
         elif name in ["MultilineStrings"]:
-            category = CodeQualityCategory.STYLE
+            category = codequality.Category.STYLE
         elif name in ["InheritanceCycle"]:
-            category = CodeQualityCategory.PERFORMANCE
+            category = codequality.Category.PERFORMANCE
         elif name in ["Deprecated", "NonListProperty"]:
-            category = CodeQualityCategory.COMPATIBILITY
+            category = codequality.Category.COMPATIBILITY
 
         return category
 
     @staticmethod
     def message_to_name(msg: str) -> str:
-        current_warning = "..."
-        msg_words = set(msg.lower().translate(str.maketrans("", "", string.punctuation)).split())
+        """Determine the name of the diagnostic from the diagnostic message.
+
+        :param msg: The diagnostic's message.
+        :type msg: str
+        :return: The name of the diagnostic.
+        :rtype: str
+        """
+        normalized_message = msg.lower()
+
+        # Map warning messages to categories
+        if "unqualified access" in normalized_message:
+            return "Unqualified accesses of properties"
+
+        if "usage of signal handlers" in normalized_message:
+            return "Signal handler without matching signal"
+
+        if "usage of with statements" in normalized_message:
+            return "Usage of with statements in QML"
+
+        if "issues related to compiling qml code" in normalized_message:
+            return "Issues related to compiling QML code"
+
+        if "unused imports" in normalized_message:
+            return "Unused imports"
+
+        if "deprecated" in normalized_message:
+            return "Deprecated components and properties"
+
+        return "Other"  # Default category for unrecognized warnings
 
         for warning, splitted in _QMLLINT_WARNING_SPLITTED.items():
             if splitted <= msg_words:
@@ -291,8 +122,14 @@ class Diagnostic:
         self.__filename = filename
         """File name of the file containing the warning."""
 
-        self.__level = level
+        self.__level: codequality.Severity
         """Severity level of the warning."""
+
+        try:
+            self.__level = codequality.Severity[level]
+        except KeyError:
+            logger.warning("Level '%s' not recognized. Use default value.", level)
+            self.__level = codequality.Severity.BLOCKER
 
         self.__line = line
         """Line in the file where is located the warning."""
@@ -338,37 +175,37 @@ class Diagnostic:
         """
         return f"{self.__level} at {self.__filename}{f':{self.__line}' if self.__line else ''}{f':{self.__column}' if self.__column else ''}{f':{self.__length}' if self.__length else ''}: {self.__message}"
 
-    def to_code_quality(self) -> dict[str, Union[str, int, list, dict]]:
+    def to_code_quality(self) -> codequality.Report:
         """Convert the current diagnostic to the Code Quality format.
 
         :return: A dictionary representing the Code Quality violation.
         :rtype: dict[str, Union[str, int, list, dict]]
         """
-        code_quality: dict = {
-            CodeQualityElement.TYPE: "issus",
-            CodeQualityElement.SEVERITY: self.__level,
-            CodeQualityElement.CHECK_NAME: f"qmllint[{self.__name}]",
-            CodeQualityElement.DESCRIPTION: self.__message,
-            CodeQualityElement.CATEGORIES: self.__category,
-            CodeQualityElement.FINGERPRINT: self.__fingerprint,
-            CodeQualityElement.LOCATION: {CodeQualityElement.PATH: self.__filename},
+        code_quality: codequality.Report = {
+            "type": "issus",
+            "severity": self.__level,
+            "check_name": f"qmllint[{self.__name}]",
+            "description": self.__message,
+            "categories": self.__category,
+            "fingerprint": self.__fingerprint,
+            "location": {"path": self.__filename},
         }
 
         if self.__line or self.__column:
-            position: dict[CodeQualityElement, Any] = {CodeQualityElement.BEGIN: {}}
+            position: codequality.LocationPositionBased = {}
 
             if self.__line:
-                position[CodeQualityElement.BEGIN][CodeQualityElement.LINE] = self.__line
+                position.setdefault("begin", codequality.Position())["lines"] = self.__line
 
             if self.__column:
-                position[CodeQualityElement.BEGIN][CodeQualityElement.COLUMN] = self.__column
+                position.setdefault("begin", codequality.Position())["column"] = self.__column
 
-            code_quality[CodeQualityElement.LOCATION][CodeQualityElement.POSITION] = position
+            code_quality["location"]["position"] = position
 
         return code_quality
 
 
-def _convert_json(json_input: dict) -> tuple[list[dict], int]:
+def _convert_json(json_input: qmllint.Report) -> tuple[list[codequality.Report], int]:
     """Convert the JSON input into a Code Quality JSON report.
 
     :param json_input: qmllint JSON report.
@@ -376,33 +213,33 @@ def _convert_json(json_input: dict) -> tuple[list[dict], int]:
     :return: A list of dictionary, and the number of violation.
     :rtype: tuple[list[dict], int]
     """
-    conversion: list[dict] = []
+    conversion: list[codequality.Report] = []
 
     # Ensure this JSON report has errors to convert
     if len(json_input) < 1:
-        logging.info("Empty JSON imported. Skipping ...")
+        logger.info("Empty JSON imported. Skipping ...")
         return conversion, 0
 
-    for json_file_diagnostic in json_input[QmlLintElement.FILES]:
-        filename: str = json_file_diagnostic[QmlLintElement.FILENAME]
+    for json_file_diagnostic in json_input["files"]:
+        filename: str = json_file_diagnostic["filename"]
 
-        if len(json_file_diagnostic[QmlLintElement.WARNINGS]) < 1:
-            logging.debug("No warning detected in file %s", filename)
+        if len(json_file_diagnostic["warnings"]) < 1:
+            logger.debug("No warning detected in file %s", filename)
             continue
 
-        logging.debug("Processing the warnings of the file %s", filename)
+        logger.debug("Processing the warnings of the file %s", filename)
 
-        for json_warning_diagnostic in json_file_diagnostic[QmlLintElement.WARNINGS]:
+        for json_warning_diagnostic in json_file_diagnostic["warnings"]:
             diagnostic: Diagnostic = Diagnostic(
                 filename,
-                json_warning_diagnostic.get(QmlLintElement.TYPE),
-                json_warning_diagnostic.get(QmlLintElement.MESSAGE),
-                json_warning_diagnostic.get(QmlLintElement.LINE),
-                json_warning_diagnostic.get(QmlLintElement.COLUMN),
-                json_warning_diagnostic.get(QmlLintElement.LENGTH),
+                json_warning_diagnostic["type"],
+                json_warning_diagnostic["message"],
+                json_warning_diagnostic.get("line"),
+                json_warning_diagnostic.get("column"),
+                json_warning_diagnostic.get("length"),
             )
 
-            logging.debug("Processed %s", diagnostic)
+            logger.debug("Processed %s", diagnostic)
             conversion.append(diagnostic.to_code_quality())
 
     return conversion, len(conversion)
@@ -420,22 +257,22 @@ def convert_file(input_file_path: str, output_file_path: str) -> int:
     """
     # Test if the input file exist
     if not os.path.exists(input_file_path) or not os.path.isfile(input_file_path):
-        logging.error("Input file '%s' not found or cannot be opened", input_file_path)
+        logger.error("Input file '%s' not found or cannot be opened", input_file_path)
         return -1
 
     # Parse the input file
-    logging.debug("Reading input file: '%s'", input_file_path)
+    logger.debug("Reading input file: '%s'", input_file_path)
 
     with open(input_file_path, "rt", encoding="utf8", errors="replace") as in_f:
         conversions, nb_issus = _convert_json(json.load(in_f))
 
     # Write the output file
-    logging.debug("Writing output file: '%s'", output_file_path)
+    logger.debug("Writing output file: '%s'", output_file_path)
 
     os.makedirs(os.path.dirname(output_file_path), exist_ok=True)  # Ensure that the destination folder exist
 
     with open(output_file_path, "w", encoding="utf8") as ou_f:
-        json.dump(conversions, ou_f, ensure_ascii=False, indent=None if logging.root.level > logging.DEBUG else 4)
+        json.dump(conversions, ou_f, ensure_ascii=False, indent=None if logger.root.level > logging.DEBUG else 4)
 
     return nb_issus
 
