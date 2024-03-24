@@ -87,3 +87,38 @@ profile = "black"
 
 [tool.black]
 line-length = 120
+
+
+############################################### Test ###############################################
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-rfE -q --cov=qmllint_codequality --cov-report=term --cov-report=html --cov-report=xml --cov-config=pyproject.toml"
+testpaths = ["tests"]
+log_cli = true
+log_cli_level = "INFO"
+
+############################################# Coverage #############################################
+
+[tool.coverage.run]
+source = ["qmllint_codequality"]
+branch = true
+
+[tool.coverage.report]
+omit = ["qmllint_codequality/__main__.py"]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "@(abc.)?abstractmethod",
+]
+
+[tool.coverage.html]
+directory = "reports/coverage/html"
+
+[tool.coverage.xml]
+output = "reports/coverage/coverage.xml"

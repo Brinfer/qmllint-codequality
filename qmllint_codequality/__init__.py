@@ -235,13 +235,13 @@ def _convert_json(json_input: qmllint.Report) -> tuple[list[codequality.Report],
     return conversion, len(conversion)
 
 
-def convert_file(input_file_path: str, output_file_path: str) -> int:
+def convert_file(input_file_path: os.PathLike, output_file_path: os.PathLike) -> int:
     """Convert qmllint JSON file to GitLab-compatible "Code Quality" JSON report.
 
     :param input_file_path: Input file path (qmllint JSON).
-    :type input_file_path: str
+    :type input_file_path: os.PathLike
     :param output_file_path: Output file path (Code Quality JSON).
-    :type output_file_path: str
+    :type output_file_path: os.PathLike
     :return: If processing failed, a negative value. If successful, number of qmllint issues processed.
     :rtype: int
     """

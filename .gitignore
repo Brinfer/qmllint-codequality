@@ -12,3 +12,7 @@ __pycache__/
 dist/
 build/
 *.egg-info
+
+# generated folders and files by the tests
+reports/
+.coverage
