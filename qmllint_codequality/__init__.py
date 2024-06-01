@@ -47,6 +47,7 @@ class Diagnostic:
         qmllint.WarningType.INFO: codequality.Severity.INFO,
         qmllint.WarningType.WARNING: codequality.Severity.MAJOR,
         qmllint.WarningType.DISABLE: codequality.Severity.BLOCKER,
+        qmllint.WarningType.CRITICAL: codequality.Severity.CRITICAL,
     }
 
     @staticmethod

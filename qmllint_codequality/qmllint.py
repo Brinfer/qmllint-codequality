@@ -67,7 +67,14 @@ class Rules(str, Enum):
     ANCHORS_USAGE = ("AnchorsUsage", (re.compile(r"Using anchors here"),))
     """Warn about anchors that are used not effectively for optimal layout management and performance."""
 
-    IMPORT_FAILURE = ("ImportFailure", (re.compile(r"Failed to import .*\. Are your import paths set up properly\?"),))
+    IMPORT_FAILURE = (
+        "ImportFailure",
+        (
+            re.compile(r"Warnings occurred while importing module \".*\":"),
+            re.compile(r"Failed to import .*\. Are your import paths set up properly\?"),
+            re.compile(r"Item was not found. Did you add all import paths?"),
+        ),
+    )
     """Warn about failing imports and deprecated qmltypes."""
 
     UNUSED_IMPORTS = ("UnusedImports", (re.compile(r"Unused import at .*"),))
@@ -76,7 +83,10 @@ class Rules(str, Enum):
     READ_ONLY_PROPERTY = ("ReadOnlyProperty",)
     """Warn about writing to read-only properties."""
 
-    DEFERRED_PROPERTY_ID = ("DeferredPropertyId",)
+    DEFERRED_PROPERTY_ID = (
+        "DeferredPropertyId",
+        (re.compile(r"Could not compile binding for .*: Cannot load property .*"),),
+    )
     """Warn about making deferred properties immediate by giving them an id."""
 
     DUPLICATED_NAME = ("DuplicatedName",)
@@ -88,7 +98,10 @@ class Rules(str, Enum):
     ACCESS_SINGLETON_VIA_OBJECT = ("AccessSingletonViaObject",)
     """Warns about accessing QML singletons through object instances rather than directly."""
 
-    DEPRECATED = ("Deprecated",)
+    DEPRECATED = (
+        "Deprecated",
+        (re.compile(r"Property \".*\" is deprecated.*"),),
+    )
     """Warns about usage of deprecated QML features or APIs."""
 
     CONTROLS_SANITY = ("ControlsSanity",)
@@ -112,7 +125,10 @@ class Rules(str, Enum):
     RESTRICTED_TYPE = ("RestrictedType",)
     """Warns about usage of QML types that are restricted or not recommended."""
 
-    PROPERTY_ALIAS_CYCLES = ("PropertyAliasCycles",)
+    PROPERTY_ALIAS_CYCLES = (
+        "PropertyAliasCycles",
+        (re.compile(r"Alias \".*\" is part of an alias cycle"),),
+    )
     """Warns about cycles in property aliases, which may lead to unexpected behavior."""
 
     VAR_USED_BEFORE_DECLARATION = ("VarUsedBeforeDeclaration",)
@@ -121,13 +137,23 @@ class Rules(str, Enum):
     ATTACHED_PROPERTY_REUSE = ("AttachedPropertyReuse",)
     """Warns about reusing attached properties in an inconsistent or incorrect manner."""
 
-    REQUIRED_PROPERTY = ("RequiredProperty",)
+    REQUIRED_PROPERTY = (
+        "RequiredProperty",
+        (re.compile(r"Component is missing required property .* from .*"),),
+    )
     """Warns about missing required properties in QML components."""
 
-    WITH_STATEMENT = ("WithStatement",)
+    WITH_STATEMENT = (
+        "WithStatement",
+        (
+            re.compile(
+                r"with statements are strongly discouraged in QML and might cause false positives when analysing unqualified identifiers"
+            ),
+        ),
+    )
     """Warns about usage of the 'with' statement in QML, which is generally discouraged."""
 
-    INHERITANCE_CYCLE = ("InheritanceCycle",)
+    INHERITANCE_CYCLE = ("InheritanceCycle", (re.compile(r" is part of an inheritance cycle: "),))
     """Warns about cycles in QML component inheritance."""
 
     UNCREATABLE_TYPE = (
@@ -151,7 +177,10 @@ class Rules(str, Enum):
     USE_PROPER_FUNCTION = ("UseProperFunction",)
     """Warns about incorrect usage of functions in QML."""
 
-    NON_LIST_PROPERTY = ("NonListProperty",)
+    NON_LIST_PROPERTY = (
+        "NonListProperty",
+        (re.compile(r"Cannot assign multiple objects to a default non-list property"),),
+    )
     """Warns about incorrect usage of non-list properties in QML."""
 
     INCOMPATIBLE_TYPE = ("IncompatibleType",)
@@ -163,13 +192,29 @@ class Rules(str, Enum):
     MISSING_TYPE = ("MissingType",)
     """Warns about missing QML types that are referenced but not defined."""
 
-    DUPLICATE_PROPERTY_BINDING = ("DuplicatePropertyBinding",)
+    DUPLICATE_PROPERTY_BINDING = (
+        "DuplicatePropertyBinding",
+        (
+            re.compile(r"Duplicate interceptor on property \".*\""),
+            re.compile(r"Duplicate value source on property \".*\""),
+            re.compile(r"Cannot combine value source and binding on property \".*\""),
+        ),
+    )
     """Warns about duplicate property bindings in QML components."""
 
     BAD_SIGNAL_HANDLER_PARAMETERS = ("BadSignalHandlerParameters", (re.compile(r"Declared signal handler \".*\""),))
     """Warns about incorrect parameters in signal handlers."""
 
-    UNQUALIFIED_ACCESS = ("UnqualifiedAccess",)
+    UNQUALIFIED_ACCESS = (
+        "UnqualifiedAccess",
+        (re.compile(r"Unqualified access"),),
+    )
+    """Warns about unqualified access."""
+
+    UNQUALIFIED_ALIAS = (
+        "UnresolvedAlias",
+        (re.compile(r"Cannot resolve alias \".*\""),),
+    )
     """Warns about unqualified access."""
 
 
@@ -180,6 +225,7 @@ class WarningType(str, Enum):
     WARNING = "warning"
     INFO = "info"
     DISABLE = "disable"
+    CRITICAL = "critical"
 
 
 class WarningDetails(TypedDict, total=True):
