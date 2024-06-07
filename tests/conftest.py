@@ -4,24 +4,28 @@
     https://docs.pytest.org/en/latest/reference/fixtures.html#conftest-py-sharing-fixtures-across-multiple-files
 """
 
-import os
+import pytest
 
-from tests import QMLLINT_REPORT, get_all_qml_file, logger, run_qmllint
+from tests import get_all_qml_file, logger, run_qmllint
 
 
-def pytest_sessionstart() -> None:
-    """Function called before performing collection and entering the run test loop.
+@pytest.fixture(scope="session")
+def qmllint_report(tmp_path_factory: pytest.TempPathFactory) -> str:
+    """Execute qmllint on all QML files.
 
-    This session setup function ensure that an up to date JSON report is generated before each test session.
+    The report is stored in a temporary file.
 
-    :raises RuntimeError: Failed to set up the test session.
+    :param tmp_path_factory: A temporary path factory.
+    :type tmp_path_factory: pytest.TempPathFactory
+    :return: The path to the qmllint report.
+    :rtype: str
+
+    .. seealso::
+       - ``tests.get_all_qml_file``
+       - ``tests.run_qmllint``
     """
-    logger.info("Setting up the tests session")
+    report = str(tmp_path_factory.mktemp("report").joinpath("qmllint_report.json"))
+    run_qmllint(report, get_all_qml_file())
 
-    # Ensure that that reports dir exist
-    os.makedirs(os.path.dirname(QMLLINT_REPORT), exist_ok=True)
-
-    try:
-        run_qmllint(QMLLINT_REPORT, get_all_qml_file())
-    except Exception as e:
-        raise RuntimeError("Setup of the test session failed") from e
+    logger.debug("qmllint report file written in '%s'", report)
+    return report

@@ -2,17 +2,26 @@
 
 import logging
 import os
+import re
 import subprocess
 import sys
-import tempfile
+from packaging.version import Version, InvalidVersion
 
 sys.path.append("../qmllint_codequality")  # Add the package to the sys path
-
 
 logger = logging.getLogger("qmllint_codequality.test")
 
 QML_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "qml")
-QMLLINT_REPORT = tempfile.NamedTemporaryFile("a+").name  # pylint: disable=consider-using-with
+"""Path to the directory containing all the QML files."""
+
+__REGEX_CAPTURE_VERSION = re.compile(r"(\d+\.\d+)\.?")
+"""Regex used to capture the version of qmllint.
+
+Capture only the major and the minor value of the version, ignore the patch part.
+"""
+
+__QMLLINT_MINIMAL_VERSION = Version("6.4.0")
+"""Minimal version of qmllint supported."""
 
 
 def get_all_qml_file() -> list[str]:
@@ -47,8 +56,23 @@ def run_qmllint(report_file: str, qml_files: list[str]) -> None:
     :param qml_files: The list of QML file.
     :type qml_files: list[str]
     :raises FileNotFoundError: Failed to generate the ``report_file``
+    :raises InvalidVersion: Current version of qmllint is not supported
     """
     logger.info("Run the qmllint tool, and save result in %s", report_file)
+
+    # Ensure that the qmllint version is correct
+    with subprocess.Popen("qmllint --version", stdout=subprocess.PIPE, shell=True, text=True) as qmllint_version:
+        qmllint_version.wait()
+        assert qmllint_version.stdout
+
+        if (version_match := __REGEX_CAPTURE_VERSION.search(qmllint_version.stdout.read())):
+            version = Version(version_match.group(1))
+            logger.info("Current version of qmllint: '%s'", version)
+
+            if version < __QMLLINT_MINIMAL_VERSION:
+                raise InvalidVersion(f"Minimal version requirement not fulfilled (>={__QMLLINT_MINIMAL_VERSION})")
+        else:
+            logger.warning("qmllint's version not found. Continue anyway ...")
 
     subprocess.run(
         " ".join(
