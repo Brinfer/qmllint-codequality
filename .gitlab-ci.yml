@@ -149,7 +149,7 @@ pytest:
   before_script:
     - *default_before_script
     - apk add qt6-qtdeclarative-dev
-    - export PATH=/usr/lib/qt6/bin/:$PATH  # Add path to qmllint in PATH
+    - export PATH=/usr/lib/qt6/bin/:${PATH}  # Add path to qmllint in PATH
   script:
     - pytest --config-file=pyproject.toml --junitxml=report.xml
   coverage: /TOTAL.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/

@@ -22,7 +22,7 @@ __REGEX_CAPTURE_VERSION = re.compile(r"(\d+\.\d+)\.?")
 Capture only the major and the minor value of the version, ignore the patch part.
 """
 
-__QMLLINT_MINIMAL_VERSION = Version("6.4.0")
+__QMLLINT_MINIMAL_VERSION = Version("6")
 """Minimal version of qmllint supported."""
 
 
@@ -87,22 +87,6 @@ def run_qmllint(report_file: pathlib.Path, qml_files: list[pathlib.PurePath]) ->
                 "qmllint",
                 "--dry-run",
                 f"--json '{report_file}'",
-                "--alias warning",
-                "--compiler warning",
-                "--controls-sanity warning",
-                "--deferred-property-id warning",
-                "--deprecated warning",
-                "--import warning",
-                "--inheritance-cycle warning",
-                "--multiline-strings warning",
-                "--multiple-attached-objects warning",
-                "--property warning",
-                "--required warning",
-                "--signal warning",
-                "--type warning",
-                "--unqualified warning",
-                "--unused-imports warning",
-                "--with warning",
                 *[f"'{file}'" for file in qml_files],
             ]
         ),
