@@ -1,5 +1,5 @@
 default:
-  image: python:3.10
+  image: python:3.10-alpine
   cache:
     paths:
       - ${CI_PROJECT_DIR}/.cache/pip  # Python packages
@@ -95,7 +95,6 @@ analysis merge:
   extends: .lint
   stage: Static analysis
   allow_failure: false
-  image: alpine:latest
   needs:
     - pylint
     - mypy
