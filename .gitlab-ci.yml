@@ -4,16 +4,42 @@ default:
     paths:
       - ${CI_PROJECT_DIR}/.cache/pip
   before_script: &default_before_script
-    - pip install -r requirements.txt
+    - pip install --quiet -r requirements.txt
 
 variables:
   PACKAGE_NAME: qmllint_codequality
   CONFIG_FILE: ${CI_PROJECT_DIR}/pyproject.toml
+  RUN_LINT: "false"
+  RUN_TESTS: "false"
+  RUN_BUILD: "false"
 
 stages:
   - Static analysis
   - Formatting
   - Build
+  - Test
+
+workflow:
+  name: "$PROJECT1_PIPELINE_NAME"
+  rules:
+    # If is a manual pipeline trigger
+    - if: $CI_PIPELINE_SOURCE == "web"
+      variables:
+        RUN_LINT: "true"
+        RUN_TESTS: "true"
+        RUN_BUILD: "true"
+    # If is a linked to a MR marked as "Draft"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TITLE =~ /-Draft$/
+      variables:
+        RUN_LINT: "false"
+        RUN_TESTS: "true"
+        RUN_BUILD: "false"
+    # If is a linked to a MR (marked as not "Draft")
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TITLE =~ /-Draft$/
+      variables:
+        RUN_LINT: "true"
+        RUN_TESTS: "true"
+        RUN_BUILD: "false"
 
 .lint:
   allow_failure: true
@@ -23,10 +49,7 @@ stages:
     - *default_before_script
     - mkdir -p ${JSON_REPORT_DIR}
   rules:
-    # If changes of the sources files are pushed to the current or default branch, or is a manual request
-    - if: $CI_PIPELINE_SOURCE  == "merge_request_event" || $CI_PIPELINE_SOURCE == "web"
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-
+    - if: RUN_LINT == "true"
 
 pylint:
   extends: .lint
@@ -35,7 +58,7 @@ pylint:
     PYLINT_JSON_REPORT: ${JSON_REPORT_DIR}/gl-codequality-pylint-report.json
   before_script:
     - *lint_before_script
-    - pip install pylint-gitlab
+    - pip install --quiet pylint-gitlab
   script:
     - pylint --rcfile=${CONFIG_FILE} --load-plugins=pylint_gitlab --output-format=gitlab-codeclimate --score=y ${PACKAGE_NAME} > ${PYLINT_JSON_REPORT}
   artifacts:
@@ -52,7 +75,7 @@ mypy:
     MYPY_JSON_REPORT: ${JSON_REPORT_DIR}/gl-codequality-mypy-report.json
   before_script:
     - *lint_before_script
-    - pip install mypy-gitlab-code-quality
+    - pip install --quiet mypy-gitlab-code-quality
   script:
     - mypy --config-file ${CONFIG_FILE} --package ${PACKAGE_NAME} > ${MYPY_TMP_FILE}
   after_script:
@@ -106,7 +129,7 @@ isort:
 build:
   stage: Build
   rules:
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $RUN_BUILD == "true"
   script:
     - python -m build
   artifacts:
@@ -114,3 +137,17 @@ build:
     paths:
       - dist/
       - ${PACKAGE_NAME}.egg-info
+
+pytest:
+  stage: Test
+  rules:
+    - if: $RUN_TESTS == "true"
+  script:
+    - pytest --config-file=pyproject.toml --junitxml=report.xml
+  artifacts:
+    when: always
+    reports:
+      junit: report.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: reports/coverage/coverage.xml
