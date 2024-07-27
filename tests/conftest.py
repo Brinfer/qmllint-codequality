@@ -26,6 +26,7 @@ def qmllint_report(tmp_path_factory: pytest.TempPathFactory) -> pathlib.Path:
        - ``tests.run_qmllint``
     """
     report = tmp_path_factory.mktemp("report").joinpath("qmllint_report.json")
+    report.write_text("") # force the creation of the file
 
     run_qmllint(report, get_all_qml_file())
 
