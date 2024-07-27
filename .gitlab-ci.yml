@@ -31,7 +31,7 @@ workflow:
         RUN_BUILD: true
         PIPELINE_NAME: "${PACKAGE_NAME}: manual trigger"
     # If is a linked to a MR marked as "Draft"
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TITLE =~ /-Draft$/
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TITLE =~ /^Draft\s:/
       variables:
         RUN_LINT: false
         RUN_TESTS: true
@@ -148,6 +148,7 @@ pytest:
     - if: $RUN_TESTS == "true"
   script:
     - pytest --config-file=pyproject.toml --junitxml=report.xml
+  coverage: /TOTAL.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/
   artifacts:
     when: always
     reports:
