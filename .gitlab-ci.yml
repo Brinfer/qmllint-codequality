@@ -49,7 +49,7 @@ workflow:
     - *default_before_script
     - mkdir -p ${JSON_REPORT_DIR}
   rules:
-    - if: RUN_LINT == "true"
+    - if: $RUN_LINT == "true"
 
 pylint:
   extends: .lint
