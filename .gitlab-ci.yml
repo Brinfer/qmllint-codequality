@@ -2,7 +2,8 @@ default:
   image: python:3.10
   cache:
     paths:
-      - ${CI_PROJECT_DIR}/.cache/pip
+      - ${CI_PROJECT_DIR}/.cache/pip  # Python packages
+      - /etc/apk/cache                # Alpine packages
   before_script: &default_before_script
     - pip install --quiet -r requirements.txt
 
@@ -146,6 +147,9 @@ pytest:
   stage: Test
   rules:
     - if: $RUN_TESTS == "true"
+  before_script:
+    - *default_before_script
+    - apk add qt5-qtdeclarative-dev
   script:
     - pytest --config-file=pyproject.toml --junitxml=report.xml
   coverage: /TOTAL.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/
@@ -166,5 +170,6 @@ execution:
   before_script:
     - pip install dist/${PACKAGE_NAME}-*.tar.gz
   script:
-    - qmllint-codequality --version
-    - qmllint-codequality --help
+    - COMMAND_LINE=$(echo "${PACKAGE_NAME}" | tr '_' '-')
+    - ${COMMAND_LINE} --version
+    - ${COMMAND_LINE} --help
