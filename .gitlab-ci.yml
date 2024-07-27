@@ -9,9 +9,10 @@ default:
 variables:
   PACKAGE_NAME: qmllint_codequality
   CONFIG_FILE: ${CI_PROJECT_DIR}/pyproject.toml
-  RUN_LINT: "false"
-  RUN_TESTS: "false"
-  RUN_BUILD: "false"
+  PIPELINE_NAME: ${PACKAGE_NAME}'s pipeline
+  RUN_LINT: false
+  RUN_TESTS: false
+  RUN_BUILD: false
 
 stages:
   - Static analysis
@@ -20,26 +21,29 @@ stages:
   - Test
 
 workflow:
-  name: "$PROJECT1_PIPELINE_NAME"
+  name: $PIPELINE_NAME
   rules:
     # If is a manual pipeline trigger
     - if: $CI_PIPELINE_SOURCE == "web"
       variables:
-        RUN_LINT: "true"
-        RUN_TESTS: "true"
-        RUN_BUILD: "true"
+        RUN_LINT: true
+        RUN_TESTS: true
+        RUN_BUILD: true
+        PIPELINE_NAME: "${PACKAGE_NAME}: manual trigger"
     # If is a linked to a MR marked as "Draft"
     - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TITLE =~ /-Draft$/
       variables:
-        RUN_LINT: "false"
-        RUN_TESTS: "true"
-        RUN_BUILD: "false"
+        RUN_LINT: false
+        RUN_TESTS: true
+        RUN_BUILD: false
+        PIPELINE_NAME: "${PACKAGE_NAME}: ${CI_MERGE_REQUEST_TITLE}"
     # If is a linked to a MR (marked as not "Draft")
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       variables:
-        RUN_LINT: "true"
-        RUN_TESTS: "true"
-        RUN_BUILD: "false"
+        RUN_LINT: true
+        RUN_TESTS: true
+        RUN_BUILD: false
+        PIPELINE_NAME: "${PACKAGE_NAME}: ${CI_MERGE_REQUEST_TITLE}"
 
 .lint:
   allow_failure: true
@@ -49,7 +53,7 @@ workflow:
     - *default_before_script
     - mkdir -p ${JSON_REPORT_DIR}
   rules:
-    - if: $RUN_LINT == "true"
+    - if: $RUN_LINT == true
 
 pylint:
   extends: .lint
@@ -129,7 +133,7 @@ isort:
 build:
   stage: Build
   rules:
-    - if: $RUN_BUILD == "true"
+    - if: $RUN_BUILD == true
   script:
     - python -m build
   artifacts:
@@ -141,7 +145,7 @@ build:
 pytest:
   stage: Test
   rules:
-    - if: $RUN_TESTS == "true"
+    - if: $RUN_TESTS == true
   script:
     - pytest --config-file=pyproject.toml --junitxml=report.xml
   artifacts:
