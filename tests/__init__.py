@@ -102,8 +102,8 @@ def run_qmllint(report_file: pathlib.Path , qml_files: list[pathlib.PurePath]) -
         ),
         check=False,
         shell=True,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        # stdout=subprocess.DEVNULL,
+        # stderr=subprocess.DEVNULL,
     )
 
     # Ensure that the report has been generated
