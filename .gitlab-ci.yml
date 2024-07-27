@@ -148,7 +148,7 @@ pytest:
     - if: $RUN_TESTS == "true"
   before_script:
     - *default_before_script
-    - apk add qt5-qtdeclarative-dev
+    - apk add qt6-qtdeclarative-dev
   script:
     - pytest --config-file=pyproject.toml --junitxml=report.xml
   coverage: /TOTAL.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/
