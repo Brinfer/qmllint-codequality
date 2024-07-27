@@ -134,7 +134,10 @@ class Rules(str, Enum):
     VAR_USED_BEFORE_DECLARATION = ("VarUsedBeforeDeclaration",)
     """Warns if 'var' is used before it's declared."""
 
-    ATTACHED_PROPERTY_REUSE = ("AttachedPropertyReuse",)
+    ATTACHED_PROPERTY_REUSE = (
+        "AttachedPropertyReuse",
+        (re.compile(r"Component is missing required property .* from .*"),),
+    )
     """Warns about reusing attached properties in an inconsistent or incorrect manner."""
 
     REQUIRED_PROPERTY = (
