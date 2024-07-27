@@ -102,10 +102,13 @@ def run_qmllint(report_file: pathlib.Path , qml_files: list[pathlib.PurePath]) -
         ),
         check=False,
         shell=True,
-        # stdout=subprocess.DEVNULL,
-        # stderr=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
     )
 
     # Ensure that the report has been generated
     if not report_file.is_file():
         raise FileNotFoundError(f"'{report_file}' has not been generated")
+
+    # TODO remove
+    logger.warning(report_file.read_text())
