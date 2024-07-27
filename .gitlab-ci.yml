@@ -35,7 +35,7 @@ workflow:
         RUN_TESTS: "true"
         RUN_BUILD: "false"
     # If is a linked to a MR (marked as not "Draft")
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TITLE =~ /-Draft$/
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       variables:
         RUN_LINT: "true"
         RUN_TESTS: "true"
