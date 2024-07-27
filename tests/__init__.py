@@ -61,8 +61,6 @@ def run_qmllint(report_file: pathlib.Path, qml_files: list[pathlib.PurePath]) ->
     :raises InvalidVersion: Current version of qmllint is not supported
     :raises FileNotFoundError: Failed to generate the ``report_file``
     """
-    logger.info("Run the qmllint tool, and save result in %s", report_file)
-
     # Ensure that qmllint is installed
     if shutil.which("qmllint"):
         # Ensure that the qmllint version is correct
@@ -80,6 +78,8 @@ def run_qmllint(report_file: pathlib.Path, qml_files: list[pathlib.PurePath]) ->
                 logger.warning("qmllint's version not found. Continue anyway ...")
     else:
         raise shutil.ExecError("qmllint not found")
+
+    logger.info("Run the qmllint tool, and save result in %s", report_file)
 
     subprocess.run(
         " ".join(
