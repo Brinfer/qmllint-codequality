@@ -3,9 +3,10 @@
 import logging
 import os
 import re
+import pathlib
+import shutil
 import subprocess
 import sys
-import pathlib
 from packaging.version import Version, InvalidVersion
 
 sys.path.append("../qmllint_codequality")  # Add the package to the sys path
@@ -47,7 +48,7 @@ def get_all_qml_file() -> list[pathlib.PurePath]:
     return qml_files
 
 
-def run_qmllint(report_file: pathlib.Path , qml_files: list[pathlib.PurePath]) -> None:
+def run_qmllint(report_file: pathlib.Path, qml_files: list[pathlib.PurePath]) -> None:
     """Execute the qmllint command line.
 
     Remove the previous ``report_file`` if exist.
@@ -56,24 +57,29 @@ def run_qmllint(report_file: pathlib.Path , qml_files: list[pathlib.PurePath]) -
     :type report_file: str
     :param qml_files: The list of QML file.
     :type qml_files: list[str]
-    :raises FileNotFoundError: Failed to generate the ``report_file``
+    :raises ExecError: Failed to find the command ``qmllint``
     :raises InvalidVersion: Current version of qmllint is not supported
+    :raises FileNotFoundError: Failed to generate the ``report_file``
     """
     logger.info("Run the qmllint tool, and save result in %s", report_file)
 
-    # Ensure that the qmllint version is correct
-    with subprocess.Popen("qmllint --version", stdout=subprocess.PIPE, shell=True, text=True) as qmllint_version:
-        qmllint_version.wait()
-        assert qmllint_version.stdout
+    # Ensure that qmllint is installed
+    if shutil.which("qmllint"):
+        # Ensure that the qmllint version is correct
+        with subprocess.Popen("qmllint --version", stdout=subprocess.PIPE, shell=True, text=True) as qmllint_version:
+            qmllint_version.wait()
+            assert qmllint_version.stdout
 
-        if (version_match := __REGEX_CAPTURE_VERSION.search(qmllint_version.stdout.read())):
-            version = Version(version_match.group(1))
-            logger.info("Current version of qmllint: '%s'", version)
+            if version_match := __REGEX_CAPTURE_VERSION.search(qmllint_version.stdout.read()):
+                version = Version(version_match.group(1))
+                logger.info("Current version of qmllint: '%s'", version)
 
-            if version < __QMLLINT_MINIMAL_VERSION:
-                raise InvalidVersion(f"Minimal version requirement not fulfilled (>={__QMLLINT_MINIMAL_VERSION})")
-        else:
-            logger.warning("qmllint's version not found. Continue anyway ...")
+                if version < __QMLLINT_MINIMAL_VERSION:
+                    raise InvalidVersion(f"Minimal version requirement not fulfilled (>={__QMLLINT_MINIMAL_VERSION})")
+            else:
+                logger.warning("qmllint's version not found. Continue anyway ...")
+    else:
+        raise shutil.ExecError("qmllint not found")
 
     subprocess.run(
         " ".join(
@@ -109,6 +115,3 @@ def run_qmllint(report_file: pathlib.Path , qml_files: list[pathlib.PurePath]) -
     # Ensure that the report has been generated
     if not report_file.is_file():
         raise FileNotFoundError(f"'{report_file}' has not been generated")
-
-    # TODO remove
-    logger.warning(report_file.read_text())

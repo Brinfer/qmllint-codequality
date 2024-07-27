@@ -161,7 +161,7 @@ class Rules(str, Enum):
 
     UNCREATABLE_TYPE = (
         "UncreatableType",
-        (re.compile(r"Object type  is not derived from QObject or QQmlComponent\..*"),),
+        (re.compile(r"Object type is not derived from QObject or QQmlComponent\..*"),),
     )
     """Warns if a QML type cannot be instantiated."""
 
