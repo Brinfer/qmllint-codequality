@@ -31,7 +31,7 @@ workflow:
         RUN_BUILD: true
         PIPELINE_NAME: "${PACKAGE_NAME}: manual trigger"
     # If is a linked to a MR marked as "Draft"
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TITLE =~ /^Draft\s:/
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TITLE =~ /^Draft/
       variables:
         RUN_LINT: false
         RUN_TESTS: true
