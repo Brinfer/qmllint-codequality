@@ -53,7 +53,7 @@ workflow:
     - *default_before_script
     - mkdir -p ${JSON_REPORT_DIR}
   rules:
-    - if: $RUN_LINT == true
+    - if: $RUN_LINT == "true"
 
 pylint:
   extends: .lint
@@ -133,7 +133,7 @@ isort:
 build:
   stage: Build
   rules:
-    - if: $RUN_BUILD == true
+    - if: $RUN_BUILD == "true"
   script:
     - python -m build
   artifacts:
@@ -145,7 +145,7 @@ build:
 pytest:
   stage: Test
   rules:
-    - if: $RUN_TESTS == true
+    - if: $RUN_TESTS == "true"
   script:
     - pytest --config-file=pyproject.toml --junitxml=report.xml
   artifacts:
@@ -155,3 +155,15 @@ pytest:
       coverage_report:
         coverage_format: cobertura
         path: reports/coverage/coverage.xml
+
+execution:
+  stage: Test
+  needs:
+    - build
+  rules:
+    - if: $RUN_TESTS == "true" && $RUN_BUILD == "true"
+  before_script:
+    - pip install dist/${PACKAGE_NAME}-*.tar.gz
+  script:
+    - qmllint-codequality --version
+    - qmllint-codequality --help
