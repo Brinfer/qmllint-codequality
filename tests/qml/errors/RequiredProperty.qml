@@ -1,3 +1,5 @@
+# https://doc.qt.io/qt-6/qmllint-warnings-and-errors-required.html
+
 import QtQuick
 
 Item {

@@ -1,15 +1,16 @@
+// https://doc.qt.io/qt-6/qmllint-warnings-and-errors-attached-property-reuse.html
 import QtQuick
+import QtQuick.Templates as T
+import QtQuick.Controls.Material // contains the Material attached type
 
-Rectangle {
-    width: 200; height: 100
-    color: "lightblue"
+T.ToolBar {
+    id: control
 
-    Text {
-        id: exampleText
-        text: "Hello, World!"
-        anchors.centerIn: parent
+    // first instantiation of Material's attached property
+    property color c: Material.toolBarColor
+
+    background: Rectangle {
+         // second instantiation of Material's attached property, wrong!
+        color: Material.toolBarColor
     }
-
-    // Intentional AttachedPropertyReuse error
-    Rectangle.AttachedProperty { }
 }

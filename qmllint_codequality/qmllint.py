@@ -80,7 +80,10 @@ class Rules(str, Enum):
     UNUSED_IMPORTS = ("UnusedImports", (re.compile(r"Unused import at .*"),))
     """"Warns about unused QML imports."""
 
-    READ_ONLY_PROPERTY = ("ReadOnlyProperty",)
+    READ_ONLY_PROPERTY = (
+        "ReadOnlyProperty",
+        (re.compile(r"Cannot assign to read-only property .*"), re.compile(r".*Can't assign to read-only property .*")),
+    )
     """Warn about writing to read-only properties."""
 
     DEFERRED_PROPERTY_ID = (
@@ -89,13 +92,16 @@ class Rules(str, Enum):
     )
     """Warn about making deferred properties immediate by giving them an id."""
 
-    DUPLICATED_NAME = ("DuplicatedName",)
+    DUPLICATED_NAME = ("DuplicatedName", (re.compile(r"Found a duplicated id. id .* was first declared at .*"),))
     """Warns if there are multiple declarations of the same name within the QML file."""
 
     PREFIXED_IMPORT_TYPE = ("PrefixedImportType",)
     """Warns if import types are prefixed inconsistently or incorrectly."""
 
-    ACCESS_SINGLETON_VIA_OBJECT = ("AccessSingletonViaObject",)
+    ACCESS_SINGLETON_VIA_OBJECT = (
+        "AccessSingletonViaObject",
+        (re.compile(r"Cannot load singleton as property of object"),),
+    )
     """Warns about accessing QML singletons through object instances rather than directly."""
 
     DEPRECATED = (
@@ -134,10 +140,7 @@ class Rules(str, Enum):
     VAR_USED_BEFORE_DECLARATION = ("VarUsedBeforeDeclaration",)
     """Warns if 'var' is used before it's declared."""
 
-    ATTACHED_PROPERTY_REUSE = (
-        "AttachedPropertyReuse",
-        (re.compile(r"Component is missing required property .* from .*"),),
-    )
+    ATTACHED_PROPERTY_REUSE = ("AttachedPropertyReuse",)
     """Warns about reusing attached properties in an inconsistent or incorrect manner."""
 
     REQUIRED_PROPERTY = (
@@ -219,6 +222,8 @@ class Rules(str, Enum):
         (re.compile(r"Cannot resolve alias \".*\""),),
     )
     """Warns about unqualified access."""
+
+    ID_QUOTATION = ("IdQuotation", (re.compile(r"ids do not need quotation marks"),))
 
 
 @unique
