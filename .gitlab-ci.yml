@@ -11,11 +11,12 @@ variables:
   RUN_BUILD: false
 
 stages:
-  - Docker
-  - Test
-  - Lint
-  - Formatting
-  - Build
+  - docker-build
+  - unit-test
+  - lint
+  - formatting
+  - build
+  - integration-test
 
 workflow:
   name: $PIPELINE_NAME
@@ -56,7 +57,7 @@ workflow:
 
 docker-build:
   image: docker:latest
-  stage: Docker
+  stage: docker-build
   services:
     - docker:dind
   before_script:
@@ -96,7 +97,7 @@ docker-build:
 .lint:
   image: ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
   allow_failure: true
-  stage: Lint
+  stage: lint
   variables:
     JSON_REPORT_DIR: ${CI_PROJECT_DIR}/reports
   before_script:
@@ -161,7 +162,7 @@ analysis-merger:
 .format:
   image: ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
   allow_failure: false
-  stage: Formatting
+  stage: formatting
   rules:
     - if: $RUN_FORMAT == "true"
 
@@ -179,7 +180,7 @@ isort:
 
 pytest:
   image: ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
-  stage: Test
+  stage: unit-test
   rules:
     - if: $RUN_TESTS == "true"
   script:
@@ -193,25 +194,11 @@ pytest:
         coverage_format: cobertura
         path: reports/coverage/coverage.xml
 
-execution:
-  image: ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
-  stage: Test
-  needs:
-    - build
-  rules:
-    - if: $RUN_TESTS == "true" && $RUN_BUILD == "true"
-  before_script:
-    - pip install ${PACKAGE_PATH}-*.whl
-  script:
-    - COMMAND_LINE=$(echo "${PACKAGE_NAME}" | tr '_' '-')
-    - ${COMMAND_LINE} --version
-    - ${COMMAND_LINE} --help
-
 ######################################################### Build ########################################################
 
-build:
+package:
   image: ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
-  stage: Build
+  stage: build
   rules:
     - if: $RUN_BUILD == "true"
   script:
@@ -220,3 +207,19 @@ build:
     expire_in: "7 days"
     paths:
       - ${PACKAGE_PATH}
+
+###################################################### Integration #####################################################
+
+execution:
+  image: ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
+  stage: integration-test
+  needs:
+    - package
+  rules:
+    - if: $RUN_TESTS == "true" && $RUN_BUILD == "true"
+  before_script:
+    - pip install ${PACKAGE_PATH}-*.whl
+  script:
+    - COMMAND_LINE=$(echo "${PACKAGE_NAME}" | tr '_' '-')
+    - ${COMMAND_LINE} --version
+    - ${COMMAND_LINE} --help
