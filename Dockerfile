@@ -7,7 +7,7 @@ ENV PATH=${PATH}:/usr/lib/qt6/bin/
 
 WORKDIR /tmp/pip-install
 COPY requirements.txt .
-RUN pip install --no-cache-dir --user \
+RUN pip install --no-cache-dir \
     -r requirements.txt \
     mypy-gitlab-code-quality \
     pylint-gitlab \
