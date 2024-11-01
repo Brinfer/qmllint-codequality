@@ -31,7 +31,6 @@ import os
 
 from qmllint_codequality import codequality, qmllint
 
-
 VERSION_MESSAGE = f"""
 (☞ ͡° ͜ʖ ͡°)☞ {__project__} {__version__} 🦊
 """
