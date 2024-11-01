@@ -72,7 +72,7 @@ class Rules(str, Enum):
         (
             re.compile(r"Warnings occurred while importing module \".*\":"),
             re.compile(r"Failed to import .*\. Are your import paths set up properly\?"),
-            re.compile(r"Item was not found. Did you add all import paths?"),
+            re.compile(r".* was not found. Did you add all import paths?"),
         ),
     )
     """Warn about failing imports and deprecated qmltypes."""
@@ -125,8 +125,14 @@ class Rules(str, Enum):
     LINT_PLUGIN_WARNINGS = ("LintPluginWarnings",)
     """Warns about issues reported by lint plugins configured for qmllint."""
 
-    MULTILINE_STRINGS = ("MultilineStrings",)
-    """Warns about the usage of multiline strings, which may impact readability or maintainability."""
+    MULTILINE_STRINGS = (
+        "MultilineStrings",
+        (re.compile(r"String contains unescaped line terminator which is deprecated."),),
+    )
+    """Warns about the usage of multiline strings, which may impact readability or maintainability.
+
+    This warning category is spelled ``[multiline-strings]`` by qmllint.
+    """
 
     RESTRICTED_TYPE = ("RestrictedType",)
     """Warns about usage of QML types that are restricted or not recommended."""
@@ -142,6 +148,12 @@ class Rules(str, Enum):
 
     ATTACHED_PROPERTY_REUSE = ("AttachedPropertyReuse",)
     """Warns about reusing attached properties in an inconsistent or incorrect manner."""
+
+    ATTACHED_PROPERTY_TYPE = (
+        "AttachedPropertyType",
+        (re.compile(r"Using attached type .* already initialized in a parent scope."),),
+    )
+    """Warns about the instantiation of an attached property in an object of the wrong type."""
 
     REQUIRED_PROPERTY = (
         "RequiredProperty",
@@ -168,11 +180,35 @@ class Rules(str, Enum):
     )
     """Warns if a QML type cannot be instantiated."""
 
-    MISSING_PROPERTY = ("MissingProperty", (re.compile(r"Property \".*\" not found on type \".*\""),))
-    """Warns about missing properties that are expected to be present in QML components."""
+    MISSING_PROPERTY = (
+        "MissingProperty",
+        (
+            re.compile(r"Property \".*\" not found on type \".*\""),
+            re.compile(r"Cannot assign to non-existent default property"),
+        ),
+    )
+    """Warns about missing properties that are expected to be present in QML components.
+
+    This warning category is spelled ``[missing-property]`` by qmllint.
+    """
 
     INVALID_LINT_DIRECTIVE = ("InvalidLintDirective",)
     """Warns about invalid lint directives used in QML code."""
+
+    INVALID_QMLLINT_DIRECTIVE = (
+        "InvalidQmlLintDirective",
+        (
+            re.compile(
+                r"Invalid qmllint directive \".*\" provided",
+            ),
+        ),
+    )
+    """Warns about the use of an invalid qmllint directive in a qmllint comment.
+
+    This is probably due to a typo.
+
+    This warning category is spelled ``[invalid-lint-directive]`` by qmllint.
+    """
 
     COMPILER_WARNINGS = (
         "CompilerWarnings",
@@ -189,7 +225,7 @@ class Rules(str, Enum):
     )
     """Warns about incorrect usage of non-list properties in QML."""
 
-    INCOMPATIBLE_TYPE = ("IncompatibleType",)
+    INCOMPATIBLE_TYPE = ("IncompatibleType", (re.compile(r"Cannot assign to default property of incompatible type"),))
     """Warns about incompatible types used in QML bindings."""
 
     TOP_LEVEL_COMPONENT = ("TopLevelComponent",)

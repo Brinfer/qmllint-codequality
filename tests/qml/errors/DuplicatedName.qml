@@ -1,13 +1,9 @@
+// https://doc.qt.io/qt-6/qmllint-warnings-and-errors-syntax-duplicate-ids.html
 import QtQuick
 
 Item {
-    Rectangle {
-        signal duplicateSignal
-        signal duplicateSignal
-    }
-
-    Rectangle {
-        property int duplicateProperty
-        property int duplicateProperty
+    id: root
+    Item {
+        id: root
     }
 }

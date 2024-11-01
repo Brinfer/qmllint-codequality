@@ -1,3 +1,4 @@
+// https://doc.qt.io/qt-6/qmllint-warnings-and-errors-inheritance-cycle.html
 import QtQuick
 
 Item {
