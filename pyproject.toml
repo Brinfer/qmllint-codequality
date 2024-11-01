@@ -4,7 +4,7 @@
 name = "qmllint-codequality"
 authors = [{ name = "Brinfer", email = "brinfer@proton.me" }]
 description = "Convert qmllint output to Code Quality JSON"
-license = {file = "LICENSE.md"}
+license = { file = "LICENSE.md" }
 requires-python = ">=3.10"
 keywords = ["qmllint", "python", "code quality", "gitlab"]
 classifiers = [
@@ -27,7 +27,7 @@ Issues = "https://gitlab.com/brinferfr/qmllint-codequality/-/issues"
 ########################################## Package builder #########################################
 
 [build-system]
-requires = ["setuptools"]
+requires = ["wheel", "setuptools"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.dynamic]
