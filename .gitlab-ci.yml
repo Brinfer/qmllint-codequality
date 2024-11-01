@@ -63,8 +63,6 @@ docker-build:
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
-    - echo ${DOCKER_TAG_LATEST}
-    - echo ${DOCKER_IMAGE_TAG}
     - >
       if [ "${DOCKER_TAG_LATEST}" == "true" ]; then
         docker buildx build --push --tag ${DOCKER_IMAGE_NAME}:latest --tag ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} .
@@ -89,7 +87,7 @@ docker-build:
       changes:
         - Dockerfile
       variables:
-        DOCKER_IMAGE_TAG: dev-${CI_MERGE_REQUEST_PROJECT_ID}
+        DOCKER_IMAGE_TAG: dev-${CI_MERGE_REQUEST_IID}
         DOCKER_TAG_LATEST: "false"
 
 ######################################################### Lint #########################################################
