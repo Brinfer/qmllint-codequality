@@ -1,0 +1,175 @@
+default:
+  image: python:3.10-alpine
+  cache:
+    paths:
+      - ${CI_PROJECT_DIR}/.cache/pip  # Python packages
+      - /etc/apk/cache                # Alpine packages
+  before_script: &default_before_script
+    - pip install --quiet -r requirements.txt
+
+variables:
+  PACKAGE_NAME: qmllint_codequality
+  CONFIG_FILE: ${CI_PROJECT_DIR}/pyproject.toml
+  PIPELINE_NAME: ${PACKAGE_NAME}'s pipeline
+  RUN_LINT: false
+  RUN_TESTS: false
+  RUN_BUILD: false
+
+stages:
+  - Static analysis
+  - Formatting
+  - Build
+  - Test
+
+workflow:
+  name: $PIPELINE_NAME
+  rules:
+    # If is a manual pipeline trigger
+    - if: $CI_PIPELINE_SOURCE == "web"
+      variables:
+        RUN_LINT: true
+        RUN_TESTS: true
+        RUN_BUILD: true
+        PIPELINE_NAME: "${PACKAGE_NAME}: manual trigger"
+    # If is a linked to a MR marked as "Draft"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TITLE =~ /^Draft/
+      variables:
+        RUN_LINT: false
+        RUN_TESTS: true
+        RUN_BUILD: false
+        PIPELINE_NAME: "${PACKAGE_NAME}: ${CI_MERGE_REQUEST_TITLE}"
+    # If is a linked to a MR (marked as not "Draft")
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      variables:
+        RUN_LINT: true
+        RUN_TESTS: true
+        RUN_BUILD: false
+        PIPELINE_NAME: "${PACKAGE_NAME}: ${CI_MERGE_REQUEST_TITLE}"
+
+.lint:
+  allow_failure: true
+  variables:
+    JSON_REPORT_DIR: ${CI_PROJECT_DIR}/reports
+  before_script: &lint_before_script
+    - *default_before_script
+    - mkdir -p ${JSON_REPORT_DIR}
+  rules:
+    - if: $RUN_LINT == "true"
+
+pylint:
+  extends: .lint
+  stage: Static analysis
+  variables:
+    PYLINT_JSON_REPORT: ${JSON_REPORT_DIR}/gl-codequality-pylint-report.json
+  before_script:
+    - *lint_before_script
+    - pip install --quiet pylint-gitlab
+  script:
+    - pylint --rcfile=${CONFIG_FILE} --load-plugins=pylint_gitlab --output-format=gitlab-codeclimate --score=y ${PACKAGE_NAME} > ${PYLINT_JSON_REPORT}
+  artifacts:
+    when: always
+    paths:
+      - ${PYLINT_JSON_REPORT}
+    expire_in: 1 hour
+
+mypy:
+  extends: .lint
+  stage: Static analysis
+  variables:
+    MYPY_TMP_FILE: mypy-output-tmp.txt
+    MYPY_JSON_REPORT: ${JSON_REPORT_DIR}/gl-codequality-mypy-report.json
+  before_script:
+    - *lint_before_script
+    - pip install --quiet mypy-gitlab-code-quality
+  script:
+    - mypy --config-file ${CONFIG_FILE} --package ${PACKAGE_NAME} > ${MYPY_TMP_FILE}
+  after_script:
+    - mypy-gitlab-code-quality < ${MYPY_TMP_FILE} > ${MYPY_JSON_REPORT}
+  artifacts:
+    when: always
+    paths:
+      - ${MYPY_JSON_REPORT}
+    expire_in: 1 hour
+
+analysis merge:
+  extends: .lint
+  stage: Static analysis
+  allow_failure: false
+  needs:
+    - pylint
+    - mypy
+  variables:
+    JSON_REPORT: ${JSON_REPORT_DIR}/gl-codequality-report.json
+    JSON_REPORT_TMP: gl-codequality-report-tmp.json
+  before_script:
+    - apk add jq
+    - touch ${JSON_REPORT}
+    - touch ${JSON_REPORT_TMP}
+  script:
+    - |+
+      for json in ${JSON_REPORT_DIR}/*.json
+      do
+        jq -c '.[]' ${json} >> ${JSON_REPORT_TMP}
+      done
+    - jq -s '.' ${JSON_REPORT_TMP} > ${JSON_REPORT}
+  artifacts:
+    when: always
+    reports:
+      codequality:
+        - ${JSON_REPORT}
+
+black:
+  extends: .lint
+  stage: Formatting
+  script:
+    - black --verbose --config ${CONFIG_FILE} --check ${PACKAGE_NAME}
+
+isort:
+  extends: .lint
+  stage: Formatting
+  script:
+    - isort --settings-path ${CONFIG_FILE} --verbose --check ${PACKAGE_NAME}
+
+build:
+  stage: Build
+  rules:
+    - if: $RUN_BUILD == "true"
+  script:
+    - python -m build
+  artifacts:
+    expire_in: "7 days"
+    paths:
+      - dist/
+      - ${PACKAGE_NAME}.egg-info
+
+pytest:
+  stage: Test
+  rules:
+    - if: $RUN_TESTS == "true"
+  before_script:
+    - *default_before_script
+    - apk add qt6-qtdeclarative-dev
+    - export PATH=/usr/lib/qt6/bin/:${PATH}  # Add path to qmllint in PATH
+  script:
+    - pytest --config-file=pyproject.toml --junitxml=report.xml
+  coverage: /TOTAL.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/
+  artifacts:
+    when: always
+    reports:
+      junit: report.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: reports/coverage/coverage.xml
+
+execution:
+  stage: Test
+  needs:
+    - build
+  rules:
+    - if: $RUN_TESTS == "true" && $RUN_BUILD == "true"
+  before_script:
+    - pip install dist/${PACKAGE_NAME}-*.tar.gz
+  script:
+    - COMMAND_LINE=$(echo "${PACKAGE_NAME}" | tr '_' '-')
+    - ${COMMAND_LINE} --version
+    - ${COMMAND_LINE} --help

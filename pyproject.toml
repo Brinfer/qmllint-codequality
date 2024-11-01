@@ -1,0 +1,130 @@
+############################################# Project ##############################################
+
+[project]
+name = "qmllint-codequality"
+authors = [{ name = "Brinfer", email = "brinfer@proton.me" }]
+description = "Convert qmllint output to Code Quality JSON"
+license = { file = "LICENSE.md" }
+requires-python = ">=3.10"
+keywords = ["qmllint", "python", "code quality", "gitlab"]
+classifiers = [
+    "Development Status :: Work in Progress",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.10",
+]
+# dependencies =[""]
+dynamic = ["version", "readme"]
+
+[project.scripts]
+qmllint-codequality = "qmllint_codequality.__main__:main"
+
+[project.urls]
+Homepage = "https://gitlab.com/brinferfr/qmllint-codequality"
+Repository = "https://gitlab.com/brinferfr/qmllint-codequality.git"
+Issues = "https://gitlab.com/brinferfr/qmllint-codequality/-/issues"
+
+########################################## Package builder #########################################
+
+[build-system]
+requires = ["wheel", "setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+version = { attr = "qmllint_codequality.__version__" }
+readme = { file = "README.md", content-type = "text/markdown" }
+
+[tool.setuptools.packages]
+find = {}
+
+############################################## Linter ##############################################
+
+[tool.pylint.main]
+persistent = true
+suggestion-mode = true
+load-plugins = [
+    "pylint.extensions.code_style",
+    "pylint.extensions.docparams",
+    "pylint.extensions.docstyle",
+    "pylint.extensions.magic_value",
+    "pylint.extensions.mccabe",
+    "pylint_pytest",
+]
+
+[tool.pylint.design]
+max-branches = 10
+
+[tool.pylint.format]
+ignore-long-lines = "^\\s*(# )?<?https?://\\S+>?$"
+indent-string = "    "
+max-line-length = 120
+
+[tool.pylint.logging]
+logging-format-style = "old"
+logging-modules = ["logging"]
+
+[tool.pylint.parameter_documentation]
+accept-no-param-doc = false
+accept-no-raise-doc = false
+accept-no-return-doc = false
+accept-no-yields-doc = false
+
+default-docstring-type = "sphinx"
+
+[tool.pylint.magic-value]
+valid-magic-values = [0, -1, 1, "", "__main__"]
+
+[tool.mypy]
+ignore_missing_imports = true
+follow_imports = "skip"
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_decorators = true
+warn_redundant_casts = true
+allow_untyped_globals = true
+show_error_context = true
+show_column_numbers = true
+show_error_codes = true
+
+[tool.isort]
+profile = "black"
+
+############################################# Formatter ############################################
+
+[tool.black]
+line-length = 120
+
+############################################### Test ###############################################
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-rfE -q --cov=qmllint_codequality --cov-report=term --cov-report=html --cov-report=xml --cov-config=pyproject.toml"
+testpaths = ["tests"]
+log_cli = true
+log_cli_level = "INFO"
+
+############################################# Coverage #############################################
+
+[tool.coverage.run]
+source = ["qmllint_codequality"]
+branch = true
+
+[tool.coverage.report]
+omit = ["qmllint_codequality/__main__.py"]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@(abc.)?abstractmethod",
+]
+
+[tool.coverage.html]
+directory = "reports/coverage/html"
+
+[tool.coverage.xml]
+output = "reports/coverage/coverage.xml"

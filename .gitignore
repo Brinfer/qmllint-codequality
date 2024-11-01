@@ -1,0 +1,18 @@
+# Python's virtual environnement folders
+.env/
+venv/
+
+# IDE folders
+.vscode/
+
+# Python's generated folders
+__pycache__/
+
+# build package's generated folder
+dist/
+build/
+*.egg-info
+
+# generated folders and files by the tests
+reports/
+.coverage
