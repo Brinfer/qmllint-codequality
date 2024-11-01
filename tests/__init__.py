@@ -11,7 +11,7 @@ from packaging.version import Version, InvalidVersion
 
 sys.path.append("../qmllint_codequality")  # Add the package to the sys path
 
-logger = logging.getLogger("qmllint_codequality.test")
+logger = logging.getLogger(f"qmllint_codequality.{__name__}")
 
 QML_DIR = pathlib.Path(pathlib.Path(__file__).parent, "qml")
 """Path to the directory containing all the QML files."""

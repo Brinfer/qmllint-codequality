@@ -1,41 +1,11 @@
 """Module for testing the good conversion of the qmllint report to a CodeQuality report."""
 
-import json
-import tempfile
+import logging
 import pytest
-from typing import TYPE_CHECKING
 
-import qmllint_codequality
 from qmllint_codequality import codequality, qmllint
-from tests import logger
 
-if TYPE_CHECKING:
-    import pathlib
-
-
-@pytest.fixture(scope="class")
-def code_quality_report(qmllint_report: "pathlib.Path") -> list[codequality.Report]:
-    """Fixture converting the qmllint report into a list of ``codequality.Report``.
-
-    :param qmllint_report: Path to the qmllint report.
-    :type qmllint_report: pathlib.Path
-    :raises RuntimeError: Failed to convert the qmllint report.
-    :return: The list of qmllint error converter into ``codequality.Report``.
-    :rtype: list[codequality.Report]
-    """
-    with tempfile.NamedTemporaryFile("a+") as codequality_report:
-        logger.info("Convert the qmllint report to a CodeQuality report in '%s'", codequality_report.name)
-
-        # If the returned value is less than 0, then an error occurred,
-        # at least one rule violation must be found
-        if (nb_error := qmllint_codequality.convert_file(qmllint_report, codequality_report.name)) < 1:
-            raise RuntimeError("Failed to convert the qmllint report")
-
-        logger.info("Find %d errors in the QML files", nb_error)
-
-        # Load the JSON report resulting of the conversion
-        return json.load(codequality_report)
-
+logger = logging.getLogger(f"qmllint_codequality.{__name__}")
 
 class TestRuleIsFound:
     """Check that a qmllint rule violation can be refound in the CodeQuality report."""
